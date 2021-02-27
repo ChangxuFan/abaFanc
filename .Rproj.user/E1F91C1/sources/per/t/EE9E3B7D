@@ -1,0 +1,22 @@
+{
+    "collab_server" : "",
+    "contents" : "",
+    "created" : 1594996573965.000,
+    "dirty" : false,
+    "encoding" : "UTF-8",
+    "folds" : "",
+    "hash" : "1427552869",
+    "id" : "EE9E3B7D",
+    "lastKnownWriteTime" : 1594993503,
+    "last_content_update" : 1594996748974,
+    "path" : "~/R_packages/abaFanc/R/align_objects.R",
+    "project_path" : "R/align_objects.R",
+    "properties" : {
+        "cursorPosition" : "1,0",
+        "scrollLine" : "7"
+    },
+    "relative_order" : 1,
+    "source_on_save" : false,
+    "source_window" : "",
+    "type" : "r_source"
+}
