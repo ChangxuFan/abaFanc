@@ -10,6 +10,19 @@ fasta.wrap.fanc <- function(in.fa, out.fa=NULL) {
   return(out.fa)
 }
 
+read.fasta.fanc <- function(in.fa, return.list = T) {
+  fa <- seqinr::read.fasta(in.fa, forceDNAtolower = F)
+  if (return.list == T)
+    fa <- seqinr2list(fa)
+  return(fa)
+}
+
+seqinr2list <- function(seqinr.o) {
+  names <- names(seqinr.o)
+  fa.list <- seqinr::getSequence(seqinr.o)
+  names(fa.list) <- names
+  return(fa.list)
+}
 # fasta.mask.fanc <- function(in.fa, out.fa=NULL) {
 #   if (is.null(out.fa))
 #     out.fa <- in.fa
@@ -129,6 +142,83 @@ get.fasta.bed <- function(bed, root.name=NULL, genome=NULL, source.fasta=NULL, a
   }
   return(out.fa)
 
+}
+
+get.fasta.bed.2 <- function(df, genome=NULL, fa=NULL,  df.is.bed, threads = 1, out.fa = NULL) {
+  # df should contain: chr, start, end, regionID, fa and/or genome. strand is optional
+  # if all regions share the same genome or fa, they can also be specified through arguments
+  if (is.character(df)) {
+    if (df.is.bed == T) {
+      df.bed <- read.table(df, sep = "\t", as.is = T)
+      df <- df.bed[, 1:4]
+      colnames(df) <- c("chr", "start", "end", "regionID")
+      if (!is.null(df.bed$V6))
+        df$strand <- df.bed$V6
+    } else {
+      df <- read.table(df, sep = "\t", as.is = T, quote = "", header = T)
+    }
+  }
+  
+  if (!is.null(genome))
+    df$genome <- genome
+  if (!is.null(fa))
+    df$fa <- fa
+  
+  if (sum(duplicated(df$regionID)) > 0) 
+    stop("regionID must be unique")
+  
+  seq.list <- df %>% split(., f = factor(.$regionID, levels = .$regionID)) %>% 
+    mclapply(function(x) {
+      if (is.null(x$fa) || is.na(x$fa)) {
+        x$fa <- paste0("/bar/cfan/genomes/", x$genome, "/", x$genome, ".fa")
+      }
+      seq <- get.fasta.core(genome.fa = x$fa, chr = x$chr, start = x$start,
+                            end = x$end, strand = x$strand)
+      return(seq)
+    }, mc.cores = threads, mc.cleanup = T)
+  if (!is.null(out.fa)) {
+    seqinr::write.fasta(sequences = seq.list, names = names(seq.list), file.out = out.fa)
+  }
+  return(seq.list)
+}
+
+get.fasta.core <- function(genome.fa, chr, start, end, strand=NULL,
+                           bedtools = "/bar/cfan/anaconda2/envs/jupyter/bin/bedtools") {
+  df <- data.frame(chr = chr, start = start, end = end)
+  if (!is.null(strand))
+    df$strand <- strand
+  if (nrow(df) != 1) 
+    stop("get.fasta.core: df must be exactly 1 row")
+  gr <- GenomicRanges::makeGRangesFromDataFrame(df)
+  bed <- tempfile()
+  rtracklayer::export.bed(gr, bed)
+  fa <- tempfile()
+  cmd <- paste0(bedtools, " getfasta -fi ", genome.fa, " -bed ", bed, 
+                " -fo ", fa)
+  if (!is.null(strand))
+    cmd <- paste0(cmd, " -s")
+  system(cmd)
+  fa <- seqinr::read.fasta(fa, forceDNAtolower = F)
+  seq <- seqinr::getSequence(fa)[[1]]
+  return(seq)
+}
+
+mafft.fanc <- function(in.fa, mafft = "/opt/apps/mafft/7.427/mafft", aligned.fa = NULL,
+                       mafft.params = "--auto --reorder") {
+  if (!is.character(in.fa)) {
+    in.fa.file <- tempfile()
+    seqinr::write.fasta(in.fa, names(in.fa), in.fa.file)
+    in.fa <- in.fa.file
+  }
+  if (is.null(aligned.fa))
+    aligned.fa <- tempfile()
+  cmd <- paste0(mafft, " ", mafft.params, " ", in.fa,  " > ", aligned.fa)
+  utilsFanc::cmd.exec.fanc(cmd = cmd, intern = F, run = T)
+  out.fa <- seqinr::read.fasta(aligned.fa, forceDNAtolower = F)
+  names <- names(out.fa)
+  out.fa <- seqinr::getSequence(out.fa)
+  names(out.fa) <- names
+  return(out.fa)
 }
 
 # mpw <- function(from.fa=NULL, from.bed=NULL, ref.pattern, chr.name, shift=0,
