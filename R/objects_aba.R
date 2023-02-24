@@ -58,7 +58,7 @@ bp.df.gen <- function(data.gr, region.df=NULL) {
     region.df <- region.df %>% `names<-`(NULL) %>% as.data.frame() 
     region.df$chr <- region.df$seqnames
   }
-    
+  
   start <- region.df$start %>% min()
   end <- region.df$end %>% max()
   
@@ -245,7 +245,7 @@ aba.plot.hm <- function(abao, track.type, use.mafft.order = F,
       p <- ggplot(track.bp.df, aes(x = aln, y = factor(track.name, levels = tracks), fill = forth)) +
         geom_tile() 
     }
-
+    
     if (track.type == "rmsk") {
       track.bp.df$fifth <- sub("/.+$", "", track.bp.df$fifth)
       p <- ggplot(track.bp.df, aes(x = aln, y = factor(track.name, levels = tracks), fill = fifth)) +
@@ -259,7 +259,7 @@ aba.plot.hm <- function(abao, track.type, use.mafft.order = F,
     vlines <- cut.res$cut.df.buffer$start
     p <- p + scale_x_discrete(drop = F, breaks = factor(cut.res$breaks %>% c(vlines), levels = cut.res$levels)) +
       geom_vline(xintercept = factor(vlines, levels = cut.res$levels))
-      
+    
   }
   if (!is.null(text.size)) {
     p <- p + theme(text = element_text(size = text.size))
@@ -274,6 +274,6 @@ aba.plot.hm <- function(abao, track.type, use.mafft.order = F,
     ggsave(plot.out, p, width = width, height = height, units = "in", dpi = 100)
   }
   return(p)
-
+  
 }
 
